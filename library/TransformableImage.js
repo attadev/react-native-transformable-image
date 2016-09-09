@@ -1,7 +1,7 @@
 'use strict';
 
 import React, { Component, PropTypes } from 'react';
-import { Image } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 
 import ViewTransformer from 'react-native-view-transformer';
 
@@ -18,7 +18,7 @@ export default class TransformableImage extends Component {
       width: PropTypes.number,
       height: PropTypes.number,
     }),
-
+    maxScale: PropTypes.number,
     enableTransform: PropTypes.bool,
     enableScale: PropTypes.bool,
     enableTranslate: PropTypes.bool,
@@ -62,8 +62,11 @@ export default class TransformableImage extends Component {
   render() {
     let maxScale = 1;
     let contentAspectRatio = undefined;
-    let width, height; //pixels
+    let width, height, containerWidth, containerHeight; //pixels
 
+    containerWidth = this.props.width
+    containerHeight = this.props.height
+    
     if (this.props.pixels) {
       //if provided via props
       width = this.props.pixels.width;
@@ -74,15 +77,28 @@ export default class TransformableImage extends Component {
       height = this.state.pixels.height;
     }
 
-    if (width && height) {
-      contentAspectRatio = width / height;
-      if (this.state.width && this.state.height) {
-        maxScale = Math.max(width / this.state.width, height / this.state.height);
-        maxScale = Math.max(1, maxScale);
+    if (this.props.maxScale) {
+      maxScale = this.props.maxScale;
+    }
+    else {
+      if (width && height) {
+        contentAspectRatio = width / height;
+        if (this.state.width && this.state.height) {
+          maxScale = Math.max(width / this.state.width, height / this.state.height);
+          maxScale = Math.max(1, maxScale);
+        }
       }
     }
-
-
+    if (width < height) {
+        containerWidth = (containerHeight * width) / height
+    }
+    else {
+        let exactHeight = Math.min((containerWidth * height) / width, containerHeight)
+        if (exactHeight != (containerWidth * height)) {
+            containerWidth = (exactHeight * width) / height
+        }
+        containerHeight = exactHeight
+    }
     return (
       <ViewTransformer
         ref='viewTransformer'
@@ -96,10 +112,10 @@ export default class TransformableImage extends Component {
         maxScale={maxScale}
         contentAspectRatio={contentAspectRatio}
         onLayout={this.onLayout.bind(this)}
-        style={this.props.style}>
+        style={{width: containerWidth, height: containerHeight, flex: 1, alignItems: 'center', flexDirection: 'row'}}>
         <Image
           {...this.props}
-          style={[this.props.style, {backgroundColor: 'transparent'}]}
+          style={[styles.image]}
           resizeMode={'contain'}
           onLoadStart={this.onLoadStart.bind(this)}
           onLoad={this.onLoad.bind(this)}
@@ -179,3 +195,14 @@ function sameSource(source, nextSource) {
   }
   return false;
 }
+
+var styles = StyleSheet.create({
+  image: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+  },
+})
