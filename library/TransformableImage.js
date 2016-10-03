@@ -1,7 +1,7 @@
 'use strict';
 
 import React, { Component, PropTypes } from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { Image } from 'react-native';
 
 import ViewTransformer from 'react-native-view-transformer';
 
@@ -62,10 +62,13 @@ export default class TransformableImage extends Component {
   render() {
     let maxScale = 1;
     let contentAspectRatio = undefined;
-    let width, height, containerWidth, containerHeight; //pixels
+    let width, height, containerWidth, containerHeight, viewWidth, viewHeight; //pixels
 
     containerWidth = this.props.width
     containerHeight = this.props.height
+    
+    viewWidth = this.props.width
+    viewHeight = this.props.height
     
     if (this.props.pixels) {
       //if provided via props
@@ -90,7 +93,11 @@ export default class TransformableImage extends Component {
       }
     }
     if (width < height) {
-        containerWidth = (containerHeight * width) / height
+        let exactWidth = Math.min((containerHeight * width) / height, containerWidth)
+        if (exactWidth != (containerHeight * width)) {
+            containerHeight = (exactWidth * height) / width
+        }
+        containerWidth = exactWidth
     }
     else {
         let exactHeight = Math.min((containerWidth * height) / width, containerHeight)
@@ -112,10 +119,10 @@ export default class TransformableImage extends Component {
         maxScale={maxScale}
         contentAspectRatio={contentAspectRatio}
         onLayout={this.onLayout.bind(this)}
-        style={{width: containerWidth, height: containerHeight, flex: 1, alignItems: 'center', flexDirection: 'row'}}>
+          style={{width: containerWidth, height: containerHeight, alignSelf: 'center'}}>
         <Image
           {...this.props}
-          style={[styles.image]}
+          style={{width: containerWidth, height: containerHeight, alignSelf: 'center'}}
           resizeMode={'contain'}
           onLoadStart={this.onLoadStart.bind(this)}
           onLoad={this.onLoad.bind(this)}
@@ -159,7 +166,7 @@ export default class TransformableImage extends Component {
         Image.getSize(
           source.uri,
           (width, height) => {
-            DEV && console.log('getImageSize...width=' + width + ', height=' + height);
+            DEV && console.log('getImageSize...width=' + width + ', height=' + height);
             if (width && height) {
               if(this.state.pixels && this.state.pixels.width === width && this.state.pixels.height === height) {
                 //no need to update state
@@ -195,14 +202,3 @@ function sameSource(source, nextSource) {
   }
   return false;
 }
-
-var styles = StyleSheet.create({
-  image: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-    backgroundColor: 'transparent',
-  },
-})
